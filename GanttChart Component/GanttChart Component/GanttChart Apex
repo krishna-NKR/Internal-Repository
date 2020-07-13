@@ -1,0 +1,124 @@
+/**
+ * @File Name          : GanttChartApex.cls
+ * @Description        : Apex class for Gantt Chart
+ * @Author             : krishna Reddy | krishna.reddy@proseraa.com
+ * @Last Modified By   : krishna Reddy | krishna.reddy@proseraa.com
+ * @Created Date       : 7/5/2020, 3:02 AM
+ * @Last Modified On   : 7/8/2020, 7:27 PM
+ * @Modification Log   : 
+ *============================================================================================
+ * Date                             Author                                     Modification
+ *============================================================================================
+ * 7/8/2020, 7:27 PM   krishna Reddy | krishna.reddy@proseraa.com     Initial Version
+**/
+public class GanttChartApex {
+    
+    
+    @AuraEnabled
+    public static Map<String,Map<String,List<Wrapper>>> taskobjFamily(Integer month, Integer year){
+        Map<String,Map<String,List<Wrapper>>> taskobjsFamilyList = new Map<String,Map<String,List<Wrapper>>>();
+        
+        Map<String,List<Project_Role__c>> taskobjFamily = new Map<String,List<Project_Role__c>>();
+        List<Projects__c> family = [Select Id,Name,expanded__c,
+                                        (SELECT Id,Start_Date__c,End_Date__c,expanded__c,Name FROM Project_Roles__r) 
+                                        FROM Projects__c ORDER BY Name ASC NULLS LAST];
+        
+        Map<Id, Projects__c> tempFamilyMap = new Map<Id, Projects__c>();
+        for(Projects__c sf : family){
+            taskobjFamily.put(sf.Id, sf.Project_Roles__r);
+            tempFamilyMap.put(sf.Id,sf);
+        }
+        
+        for(String taskobjFamilyIdSet : taskobjFamily.keySet()){
+            if(taskobjFamily.containsKey(taskobjFamilyIdSet)
+               && !taskobjFamily.get(taskobjFamilyIdSet).isEmpty()){
+                   Map<String,List<Wrapper>> returntaskobjFamilyValueList = new Map<String,List<Wrapper>>();
+                   Map<String,List<Wrapper>> localtaskobjFamilyList = new Map<String,List<Wrapper>>();
+                   Wrapper tempWrap = new Wrapper();
+                   tempWrap.ProjectsFamily = tempFamilyMap.get(taskobjFamilyIdSet);
+                   localtaskobjFamilyList.put('Family', new List<Wrapper>{tempWrap});
+                   for(Project_Role__c taskobjs : taskobjFamily.get(taskobjFamilyIdSet)){
+                       returntaskobjFamilyValueList = gettaskobjList(month,year,taskobjs);
+                       localtaskobjFamilyList.putAll(returntaskobjFamilyValueList);
+                   } 
+                   taskobjsFamilyList.put(taskobjFamilyIdSet,localtaskobjFamilyList);
+               }
+        }
+        return taskobjsFamilyList;
+        
+    }
+    
+    @AuraEnabled
+    public static Map<String,List<Wrapper>> gettaskobjList(Integer month, Integer year,Project_Role__c pr){
+        Map<String,List<Wrapper>> finalList = new Map<String,List<Wrapper>>();
+        
+        Map<String,List<Task__c>>  taskobjjoin = new Map<String,List<Task__c>>();
+        Set<Id> taskobjSet = new Set<Id>();
+        
+        List<Project_Role__c> taskobjs = [Select Id,expanded__c,Name,
+                                         (Select Id,Name,Status__c,Project_Role__r.Name,Project_Role__r.Start_Date__c,Project_Role__r.End_Date__c,End_Date__c, Start_Date__c FROM Tasks__r)
+                                         FROM Project_Role__c WHERE Id =: pr.id ORDER BY Name ASC NULLS LAST];
+        Map<Id, Project_Role__c> tempMap = new Map<Id, Project_Role__c>(taskobjs);
+        for(Project_Role__c sp : taskobjs){
+            taskobjjoin.put(sp.Id, sp.Tasks__r);
+        } 
+        
+        
+        for(String taskobjIdSet : taskobjjoin.keySet()){
+            if(taskobjjoin.containsKey(taskobjIdSet) 
+               && !taskobjjoin.get(taskobjIdSet).isEmpty()){
+                   List<Wrapper> returnValueList = new List<Wrapper>();
+                   List<Wrapper> localList = new List<Wrapper>();
+                   Wrapper tempWrap = new Wrapper();
+                   tempWrap.Origtaskobj = tempMap.get(taskobjIdSet);
+                   localList.add(tempWrap);
+                   for(Task__c opp : taskobjjoin.get(taskobjIdSet)){
+                       returnValueList = gettaskobjname(month,year,opp);
+                       localList.addAll(returnValueList);
+                   }
+                   finalList.put(taskobjIdSet, localList);
+                   
+               }
+            
+        }
+        return finalList;
+        
+        
+    }
+    
+    
+    @AuraEnabled
+    public static List<Wrapper> gettaskobjname(Integer month, Integer year, Task__c s){
+        List<Wrapper> returnValue = new List<Wrapper>();
+        if(((s.Start_Date__c != null ? s.Start_Date__c.month() : 0) == month &&
+            (s.Start_Date__c != null ? s.Start_Date__c.year() : 0) == year)) 
+        {
+            returnValue.add(new Wrapper(s,(s.Start_Date__c != null ? s.Start_Date__c.day() : 0), 
+                                        (s.End_Date__c != null ? s.End_Date__c.day() : 0)));
+        }else{
+            returnValue.add(new Wrapper(s,(0),(0)));  
+        }
+        return returnValue;
+    }
+    
+    public class Wrapper {
+        @AuraEnabled
+        public Task__c taskobj {get;set;}
+        @AuraEnabled
+        public Projects__c ProjectsFamily {get;set;}
+        @AuraEnabled
+        public Project_Role__c Origtaskobj {get;set;}
+        @AuraEnabled
+        public Integer startDay{get; set;}
+        @AuraEnabled
+        public Integer endDay{get; set;}
+        public Wrapper(){}
+        public Wrapper (Task__c ts, Integer stDay, Integer enDay) {
+            taskobj = ts;
+            startDay = stDay;
+            endDay = enDay;
+        }
+    }
+    
+    
+}

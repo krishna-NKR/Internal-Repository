@@ -1,0 +1,21 @@
+/**
+ * @File Name          : CheckInOut_Apex.cls
+ * @Description        : Apex class for Checkin/Checkout Map
+ * @Author             : krishna Reddy | krishna.reddy@proseraa.com
+ * @Last Modified By   : krishna Reddy | krishna.reddy@proseraa.com
+ * @Last Modified On   : 16/06/2020, 4:28 pm
+ * @Modification Log   : 
+ *============================================================================================
+ * Ver         Date                     Author                                 Modification
+ *============================================================================================
+ * 3.0    26/07/2020, 9:00 PM   krishna Reddy | krishna.reddy@proseraa.com     Initial Version
+**/
+public class CheckInOut_Apex {
+
+    @Auraenabled
+    public static Contact_Check_In_Out__c getCheckInOut(String recordId){
+        return [SELECT Id, Name, Geo_Location_Longitude__c, Geo_Location_Latitude__c from Contact_Check_In_Out__c 
+                WHERE Id =: recordId];
+    }
+    
+}

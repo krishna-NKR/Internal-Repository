@@ -1,0 +1,32 @@
+({
+    init: function (cmp, event, helper) {
+        var action = cmp.get("c.getCheckInOut");
+        action.setParams({
+            recordId: cmp.get("v.recordId"),
+        });
+        action.setCallback(this, function(response) {
+            var state = response.getState();
+            
+            if (state === "SUCCESS") {
+                var res = response.getReturnValue();
+                var mapMarkers = [{
+                        location: {
+                            Latitude: res.Geo_Location_Latitude__c,
+                            Longitude: res.Geo_Location_Longitude__c
+                        },
+                    }
+                ];
+                cmp.set('v.markersTitle', 'Google Office locations.');
+                cmp.set('v.mapMarkers', mapMarkers);
+                 
+             }
+        });
+
+        $A.enqueueAction(action);
+
+    },
+    
+    handleMarkerSelect: function (cmp, event, helper) {
+        var marker = event.getParam("selectedMarkerValue");
+    }
+})

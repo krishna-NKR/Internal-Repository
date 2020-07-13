@@ -1,0 +1,24 @@
+<aura:component controller="CheckInOut_Apex" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global">
+    <!--Component Attributes-->
+    <aura:attribute name="mapMarkers" type="Object[]"/>
+    <aura:attribute name="selectedMarkerValue" type="String" default="SF1" />
+    <aura:attribute name="markersTitle" type="String" default="Google Maps"/>
+    <aura:attribute name="mapCenter" type="Object"/>
+    <aura:attribute name="zoomLevel" type="Integer" default="10" />
+    <aura:attribute name="showFooter" type="Boolean" default="true"/>
+    <aura:attribute name="recordId" type="String"/>
+    
+    <!--Component hanlder-->
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>
+    
+    <!--Component Lightning Map-->
+    <lightning:map
+                   mapMarkers="{!v.mapMarkers}"
+                   markersTitle="{! v.markersTitle }"
+                   onmarkerselect="{!c.handleMarkerSelect}"
+                   zoomLevel="{! v.zoomLevel }"
+                   center="{! v.mapCenter }"
+                   selectedMarkerValue="{!v.selectedMarkerValue}"
+                   showFooter="{ !v.showFooter }" >
+    </lightning:map>
+</aura:component>

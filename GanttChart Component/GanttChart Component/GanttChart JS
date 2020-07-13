@@ -1,0 +1,370 @@
+({
+    nextWeek: function(component, event, helper) {
+        var week = component.find("week").get("v.value");
+        if (week == '8') {
+            component.set("v.previousShowMonthButton", false);
+            component.find("week").set("v.value", "16");
+        } else if (week == '16') {
+            component.set("v.previousShowMonthButton", false);
+            component.find("week").set("v.value", "24");
+        } else if (week == '24') {
+            component.set("v.previousShowMonthButton", false);
+            component.find("week").set("v.value", "31");
+        }
+        helper.changeWeek(component, event, helper);
+    },
+    previousWeek: function(component, event, helper) {
+        var week = component.find("week").get("v.value");
+        if (week == '16') {
+            component.set("v.previousShowMonthButton", false);
+            component.find("week").set("v.value", "8");
+        } else if (week == '24') {
+            component.set("v.previousShowMonthButton", false);
+            component.find("week").set("v.value", "16");
+        } else if (week == '31') {
+            component.set("v.previousShowMonthButton", false);
+            component.find("week").set("v.value", "24");
+        }
+        helper.changeWeek(component, event, helper);
+    },
+    selectedWeek: function(component, event, helper) {
+        helper.changeWeek(component, event, helper);
+    },
+    selectedYear: function(component, event, helper) {
+        helper.changeMonth(component, event, helper);
+    },
+    selectedMonth: function(component, event, helper) {
+        helper.changeMonth(component, event, helper);
+    },
+    nextMonth: function(component, event, helper) {
+        helper.nextMonth(component, event, helper);
+    },
+    previousMonth: function(component, event, helper) {
+        helper.previousMonth(component, event, helper);
+    },
+    doInit: function(component, event, helper) {
+        component.set('v.isSpinnerOpen', true);
+        var numOfDay = [];
+        var numOfYear = [];
+        var curr = new Date;
+        var todayMonth = curr.getMonth();
+        var todayYear = curr.getFullYear();
+        for (let index = todayYear - 10; index < (todayYear + 31); index++) {
+            numOfYear.push(index);
+        }
+        component.set('v.numOfYears', numOfYear);
+        const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+            "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+        ];
+
+        var todayMonthName = monthNames[curr.getMonth()];
+        component.set('v.getmonthName', todayMonthName);
+
+        var weekday = new Array(7);
+        weekday[0] = "SUN";
+        weekday[1] = "MON";
+        weekday[2] = "TUE";
+        weekday[3] = "WED";
+        weekday[4] = "THR";
+        weekday[5] = "FRI";
+        weekday[6] = "SAT";
+
+        var d = new Date(new Date().getFullYear(), todayMonth, 1);
+        var n = weekday[d.getDay()];
+        var m = d.getDay();
+        var getDaysInMonth = function(todayMonth, todayYear) {
+            return new Date(todayYear, todayMonth + 1, 0).getDate();
+        };
+        var days = getDaysInMonth(todayMonth, todayYear);
+        for (var i = 1; i <= days; i++) {
+            var res = weekday[((m - 1) + i) % 7] + ' ';
+            numOfDay.push({
+                res,
+                i
+            });
+        }
+        var month = component.get('v.statusMonth');
+        if (month == 1) {
+            component.set('v.previousShowMonthButton', false);
+        } else {
+            component.set('v.previousShowMonthButton', true);
+        }
+
+        if (month == 13) {
+            component.set('v.nextShowMonthButton', false);
+        } else {
+            component.set('v.nextShowMonthButton', true);
+        }
+        component.set("v.numOfDays", numOfDay);
+        component.set('v.showButton', true);
+        component.set('v.showMonthButton', true);
+        component.set("v.getmonth", todayMonth + 1);
+        component.set("v.statusMonth", todayMonth + 1);
+        component.set("v.statusYear", todayYear);
+        component.find("week").set("v.value", "32");
+
+        var month = component.find("month").get("v.value");
+        var year = component.find("year").get("v.value");
+
+        var action = component.get("c.taskobjFamily");
+        action.setParams({
+            month: month,
+            year: year
+        });
+        action.setCallback(this, function(a) {
+            var state = a.getState();
+            if (state == 'SUCCESS') {
+                component.set('v.isSpinnerOpen', false);
+                var temp1 = a.getReturnValue();
+                var TMapLst = [];
+                for (var key in temp1) {
+                    var TaskMapLst = [];
+                    for (var key2 in temp1[key]) {
+                        if (key2 !== 'Family') {
+                            var space = temp1[key][key2][0];
+                            var temp = temp1[key][key2];
+                            temp.splice(0, 1);
+                            TaskMapLst.push({
+                                value: (space),
+                                key: temp
+                            });
+                        }
+                    }
+                    TMapLst.push({
+                        value: (temp1[key].Family),
+                        key: TaskMapLst
+                    });
+                }
+
+                component.set("v.spacename", TMapLst);
+            }
+        });
+
+        $A.enqueueAction(action);
+    },
+
+    handleToday: function(component, event, helper) {
+        var numOfYear = [];
+        var curr = new Date;
+        var todayMonth = curr.getMonth();
+        component.set("v.statusMonth", todayMonth + 1);
+        var todayYear = curr.getFullYear();
+        component.set("v.statusYear", todayYear);
+        var todayDate = curr.getDate();
+        for (let index = todayYear - 10; index < (todayYear + 31); index++) {
+            numOfYear.push(index);
+        }
+        component.set("v.numOfYears", numOfYear);
+
+        if (todayDate >= 1 && todayDate <= 8) {
+            component.find("week").set("v.value", "8");
+        } else if (todayDate >= 9 && todayDate <= 16) {
+            component.find("week").set("v.value", "16");
+        } else if (todayDate >= 17 && todayDate <= 24) {
+            component.find("week").set("v.value", "24");
+        } else {
+            component.find("week").set("v.value", "31");
+        }
+        helper.changeWeek(component, event, helper);
+    },
+    handleRefresh: function(component, event, helper) {
+        component.set('v.isSpinnerOpen', true);
+        var numOfDay = [];
+        var numOfYear = [];
+        var curr = new Date;
+        var todayMonth = curr.getMonth();
+        var todayYear = curr.getFullYear();
+        for (let index = todayYear - 10; index < (todayYear + 31); index++) {
+            numOfYear.push(index);
+        }
+        component.set('v.numOfYears', numOfYear);
+        const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+            "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+        ];
+
+        var todayMonthName = monthNames[curr.getMonth()];
+        component.set('v.getmonthName', todayMonthName);
+
+        var weekday = new Array(7);
+        weekday[0] = "SUN";
+        weekday[1] = "MON";
+        weekday[2] = "TUE";
+        weekday[3] = "WED";
+        weekday[4] = "THR";
+        weekday[5] = "FRI";
+        weekday[6] = "SAT";
+
+        var d = new Date(new Date().getFullYear(), todayMonth, 1);
+        var n = weekday[d.getDay()];
+        var m = d.getDay();
+        var getDaysInMonth = function(todayMonth, todayYear) {
+            return new Date(todayYear, todayMonth + 1, 0).getDate();
+        };
+        var days = getDaysInMonth(todayMonth, todayYear);
+        for (var i = 1; i <= days; i++) {
+            var res = weekday[((m - 1) + i) % 7] + ' ';
+            numOfDay.push({
+                res,
+                i
+            });
+        }
+        var month = component.get('v.statusMonth');
+        component.set("v.numOfDays", numOfDay);
+        component.set("v.getmonth", todayMonth + 1);
+        component.set("v.statusMonth", todayMonth + 1);
+        component.set("v.statusYear", todayYear);
+        component.find("week").set("v.value", "32");
+
+        var month = component.find("month").get("v.value");
+        var year = component.find("year").get("v.value");
+
+        var action = component.get("c.taskobjFamily");
+        action.setParams({
+            month: month,
+            year: year
+        });
+        action.setCallback(this, function(a) {
+            var state = a.getState();
+            if (state == 'SUCCESS') {
+                component.set('v.isSpinnerOpen', false);
+                var temp1 = a.getReturnValue();
+                var TMapLst = [];
+                for (var key in temp1) {
+                    var TaskMapLst = [];
+                    for (var key2 in temp1[key]) {
+                        if (key2 !== 'Family') {
+                            var space = temp1[key][key2][0];
+                            var temp = temp1[key][key2];
+                            temp.splice(0, 1);
+                            TaskMapLst.push({
+                                value: (space),
+                                key: temp
+                            });
+                        }
+                    }
+                    TMapLst.push({
+                        value: (temp1[key].Family),
+                        key: TaskMapLst
+                    });
+                }
+
+                component.set("v.spacename", TMapLst);
+            }
+        });
+
+        $A.enqueueAction(action);
+
+    },
+    toggleFamily: function(component, event, helper) {
+        helper.isToggle(component, event, helper);
+            var items = component.get("v.spacename"),
+                index = event.getSource().get("v.value");
+            var res = index.split(":");
+            var FaIndex = res[0];
+            items[FaIndex].expanded = !items[FaIndex].expanded;
+            component.set("v.spacename", items);
+        
+    },
+    toggleSpaces: function(component, event, helper) {
+        helper.isToggle(component, event, helper);
+        setTimeout(() => {
+            var items = component.get("v.spacename"),
+                index = event.getSource().get("v.value");
+            var res = index.split(":");
+            var FaIndex = res[0];
+            var FmIndex = res[1];
+            items[FaIndex].spaceList[FmIndex].expanded = !(items[FaIndex].spaceList[FmIndex].expanded);
+            
+            component.set("v.spacename", items);
+            component.set('v.isSpinnerOpen', false);
+        }, 500);
+    },
+    handleRefresh: function(component, event, helper) {
+        component.set('v.isSpinnerOpen', true);
+        var numOfDay = [];
+        var numOfYear = [];
+        var curr = new Date;
+        var todayMonth = curr.getMonth();
+        var todayYear = curr.getFullYear();
+        for (let index = todayYear - 10; index < (todayYear + 31); index++) {
+            numOfYear.push(index);
+        }
+        component.set('v.numOfYears', numOfYear);
+        const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+            "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+        ];
+
+        var todayMonthName = monthNames[curr.getMonth()];
+        component.set('v.getmonthName', todayMonthName);
+
+        var weekday = new Array(7);
+        weekday[0] = "SUN";
+        weekday[1] = "MON";
+        weekday[2] = "TUE";
+        weekday[3] = "WED";
+        weekday[4] = "THR";
+        weekday[5] = "FRI";
+        weekday[6] = "SAT";
+
+        var d = new Date(new Date().getFullYear(), todayMonth, 1);
+        var n = weekday[d.getDay()];
+        var m = d.getDay();
+        var getDaysInMonth = function(todayMonth, todayYear) {
+            return new Date(todayYear, todayMonth + 1, 0).getDate();
+        };
+        var days = getDaysInMonth(todayMonth, todayYear);
+        for (var i = 1; i <= days; i++) {
+            var res = weekday[((m - 1) + i) % 7] + ' ';
+            numOfDay.push({
+                res,
+                i
+            });
+        }
+        var month = component.get('v.statusMonth');
+        component.set("v.numOfDays", numOfDay);
+        component.set("v.getmonth", todayMonth + 1);
+        component.set("v.statusMonth", todayMonth + 1);
+        component.set("v.statusYear", todayYear);
+        component.find("week").set("v.value", "32");
+
+        var month = component.find("month").get("v.value");
+        var year = component.find("year").get("v.value");
+
+        var action = component.get("c.taskobjFamily");
+        action.setParams({
+            month: month,
+            year: year
+        });
+        action.setCallback(this, function(a) {
+            var state = a.getState();
+            if (state == 'SUCCESS') {
+                component.set('v.isSpinnerOpen', false);
+                var temp1 = a.getReturnValue();
+                var TMapLst = [];
+                for (var key in temp1) {
+                    var TaskMapLst = [];
+                    for (var key2 in temp1[key]) {
+                        if (key2 !== 'Family') {
+                            var space = temp1[key][key2][0];
+                            var temp = temp1[key][key2];
+                            temp.splice(0, 1);
+                            TaskMapLst.push({
+                                value: (space),
+                                key: temp
+                            });
+                        }
+                    }
+                    TMapLst.push({
+                        value: (temp1[key].Family),
+                        key: TaskMapLst
+                    });
+                }
+
+                component.set("v.spacename", TMapLst);
+            }
+        });
+
+        $A.enqueueAction(action);
+
+    },
+})
