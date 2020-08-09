@@ -1,0 +1,126 @@
+public class GanttChart_Apex {
+    
+    
+    @AuraEnabled
+    public static Map<String,Map<String,List<Wrapper>>> taskobjFamily(Integer month, Integer year){
+        try{
+            Map<String,Map<String,List<Wrapper>>> taskobjsFamilyList = new Map<String,Map<String,List<Wrapper>>>(); 
+            Integer numberOfDays = Date.daysInMonth(year, month);
+            Date lastDayOfMonth = Date.newInstance(year, month, numberOfDays);
+            Date startDayOfMonth = Date.newInstance(year, month, 1);
+            
+            
+            Map<String,List<Wrapper>> listwrapperMap = new  Map<String,List<Wrapper>>();
+            Map<String,List<PM_Task__c>> projectRoleTaskMap = new Map<String,List<PM_Task__c>>();
+            Set<Id> projectId = new Set<Id>();
+            for(PM_Task__c ts:[Select Id, Name,Project_Roles__c,Project_Roles__r.project__c,Status__c, Task_Type__c, Task_Start_Date__c, Task_End_Date__c FROM PM_Task__c 
+                               WHERE Status__c !='Not Started' AND Task_Type__c!=null AND Task_Start_Date__c!=null AND Task_End_Date__c!=null 
+                               AND (Task_Start_Date__c >=: startDayOfMonth  AND Task_End_Date__c <=: lastDayOfMonth) And Project_Roles__c != null])
+            {
+                if(projectRoleTaskMap.containsKey(ts.Project_Roles__c)){
+                    List<PM_Task__c> taskList = projectRoleTaskMap.get(ts.Project_Roles__c);
+                    taskList.add(ts);
+                    projectRoleTaskMap.put(ts.Project_Roles__c,taskList);
+                }else{
+                    projectRoleTaskMap.put(ts.Project_Roles__c,new List<PM_Task__c> {ts});
+                } 
+                
+                projectId.add(ts.Project_Roles__r.project__c);
+            }
+            
+            List<Project_Roles__c> Probjs = [Select Id, Name, Role__c FROM Project_Roles__c WHERE Id IN : projectRoleTaskMap.keySet() ORDER BY Name ASC NULLS LAST];
+            Map<Id, Project_Roles__c> tempMap = new Map<Id, Project_Roles__c>(Probjs);
+            
+            Map<String,List<Wrapper>> finalList = new Map<String,List<Wrapper>>();
+            for(String taskobjIdSet : projectRoleTaskMap.keySet()){
+                if(projectRoleTaskMap.containsKey(taskobjIdSet) && !projectRoleTaskMap.get(taskobjIdSet).isEmpty()){
+                    List<Wrapper> returnValueList = new List<Wrapper>();
+                    List<Wrapper> localList = new List<Wrapper>();
+                    Wrapper tempWrap = new Wrapper();
+                    tempWrap.Origtaskobj = tempMap.get(taskobjIdSet);
+                    localList.add(tempWrap);
+                    for(PM_Task__c opp : projectRoleTaskMap.get(taskobjIdSet)){
+                        returnValueList = gettaskobjname(month,year,opp);
+                        localList.addAll(returnValueList);
+                    }
+                    finalList.put(taskobjIdSet, localList); 
+                }
+                
+            }
+            
+            Map<String,List<Project_Roles__c>> pobjFamily = new Map<String,List<Project_Roles__c>>();
+            List<Project__c> family = [Select Id,Name,(SELECT Id, Name, Role__c FROM Project_Roles__r WHERE Id IN : projectRoleTaskMap.keySet()) FROM Project__c Where Id IN :projectId ORDER BY Name ASC NULLS LAST];
+            
+            Map<Id, Project__c> projectFamilyMap = new Map<Id, Project__c>();
+            for(Project__c sf : family){
+                pobjFamily.put(sf.Id, sf.Project_Roles__r);
+                projectFamilyMap.put(sf.Id,sf);
+            }
+            
+            for(String projectroleFamilyIdSet : pobjFamily.keySet()){
+                if(pobjFamily.containsKey(projectroleFamilyIdSet) && !pobjFamily.get(projectroleFamilyIdSet).isEmpty()){
+                    Map<String,List<Wrapper>> returntaskobjFamilyValueList = new Map<String,List<Wrapper>>();
+                    Map<String,List<Wrapper>> localtaskobjFamilyList = new Map<String,List<Wrapper>>();
+                    Wrapper tempWrap = new Wrapper();
+                    tempWrap.ProjectsFamily = projectFamilyMap.get(projectroleFamilyIdSet);
+                    localtaskobjFamilyList.put('Family', new List<Wrapper>{tempWrap});
+                    for(Project_Roles__c prlist : pobjFamily.get(projectroleFamilyIdSet)){ 
+                        if(finalList.containsKey(prlist.Id)){
+                            List<Wrapper> wrp = finalList.get(prlist.Id);
+                            returntaskobjFamilyValueList.put(prlist.Id,wrp);
+                            localtaskobjFamilyList.putAll(returntaskobjFamilyValueList);
+                        }
+                    } 
+                    taskobjsFamilyList.put(projectroleFamilyIdSet,localtaskobjFamilyList);
+                }
+            }
+            return taskobjsFamilyList;
+        }catch(Exception e){
+            
+        }
+        return null;
+        
+    }
+    
+    
+    @AuraEnabled
+    public static List<Wrapper> gettaskobjname(Integer month, Integer year, PM_Task__c s){
+        try{
+            List<Wrapper> returnValue = new List<Wrapper>();
+            if(((s.Task_Start_Date__c != null ? s.Task_Start_Date__c.month() : 0) == month &&
+                (s.Task_Start_Date__c != null ? s.Task_Start_Date__c.year() : 0) == year)) 
+            {
+                if(s.Task_Start_Date__c.month() == month &&  s.Task_End_Date__c.month() == month){
+                    returnValue.add(new Wrapper(s,(s.Task_Start_Date__c != null ? s.Task_Start_Date__c.day() : 0), 
+                                                (s.Task_End_Date__c != null ? s.Task_End_Date__c.day() : 0)));
+                }
+            }else{
+                returnValue.add(new Wrapper(s,(0),(0)));  
+            }
+            return returnValue;
+        }catch(Exception e){
+            
+        }
+        return null;
+    }
+    
+    public class Wrapper {
+        @AuraEnabled
+        public PM_Task__c taskobj {get;set;}
+        @AuraEnabled
+        public Project__c ProjectsFamily {get;set;} 
+        @AuraEnabled
+        public Project_Roles__c Origtaskobj {get;set;}
+        @AuraEnabled
+        public Integer startDay{get; set;}
+        @AuraEnabled
+        public Integer endDay{get; set;}
+        public Wrapper(){}
+        public Wrapper (PM_Task__c ts, Integer stDay, Integer enDay) {
+            taskobj = ts;
+            startDay = stDay;
+            endDay = enDay;
+        }
+    }
+    
+}
