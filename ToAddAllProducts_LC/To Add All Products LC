@@ -1,0 +1,132 @@
+<aura:component controller="ToaddProductsApex" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithoutHeader" access="global" >
+    <!--Custom Styles for Modal Header and Footer--> 
+    <aura:html tag="style">
+        .cuf-content {
+        padding: 0 0rem !important;
+        }
+        .slds-p-around--medium {
+        padding: 0rem !important;
+        }       
+        .slds-modal__content{
+        height:unset !important;
+        max-height:unset !important;
+        
+        }
+        .slds-modal__container{
+        margin: 0 auto;
+        max-width: 61rem !important;
+        }
+    </aura:html>
+    
+    <!--component attributs -->
+    <aura:attribute name="data" type="Map"/>
+    <aura:attribute name="filteredData" type="Map"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="selectedproducts" type="List"/>
+    <aura:attribute name="showEditmode" type="boolean" default="false"/> 
+    <aura:attribute name="OrderItemListWrapper" type="List"/>
+    <aura:attribute name="recordId" type="Id" />
+    
+    <!--aura handler with waiting and donewaiting events-->
+    <aura:handler name="init" value="{!this }" action="{!c.init }"/>
+    
+    <!--loading spinner start-->
+    <aura:if isTrue="{!v.spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading...</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    <!-- Loading spinner end-->  
+    
+    
+    <!--Modal Header-->  
+    <div class="modal-header slds-modal__header slds-size_1-of-1">
+        <h4 class="title slds-text-heading--medium">Add Products</h4>
+    </div> 
+    <!--End Modal Header-->
+    
+    
+    <div class="slds-modal__content slds-p-around--x-small slds-align_absolute-center slds-size_1-of-1 slds-is-relative">
+        <form class="slds-form--stacked">
+            <aura:if isTrue="{!!v.showEditmode}">
+                <div class="slds-form-element">
+                    <div class="slds-form-element__control">
+                        <lightning:input onchange="{!c.searchTable}" type="search" label="Searh" variant="label-hidden" placeholder="Search Products" aura:id="SearchBox"/>
+                    </div>
+                </div>
+                <!--<center/>-->
+                <div class="slds-card__body slds-card__body_inner">
+                    <div class="slds-table--header-fixed_container" style="height:400px;">
+                        <lightning:datatable columns="{!v.columns}"
+                                             data="{!v.filteredData}"
+                                             keyField="id"
+                                             onrowselection="{!c.handleSelect}"/>
+                    </div>
+                </div>
+                <aura:set attribute="else">
+                    <div class="slds-card__body slds-card__body_inner ">
+                        <div class="slds-table--header-fixed_container" style="height:400px;">
+                            <div class="slds-scrollable_y" style="height:100%;">
+                                <table class="slds-table slds-table--bordered slds-table--cell-buffer" role="grid">      
+                                    <thead>  
+                                        <tr class="slds-text-title--caps"> 
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="Name">Product Name</div>
+                                            </th> 
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="Quantity">Quantity</div>
+                                            </th> 
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="UnitPrice">Unit Price</div>
+                                            </th> 
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="ListPrice">List Price</div>
+                                            </th> 
+                                        </tr>
+                                    </thead>
+                                    <tbody>        
+                                        <aura:iteration items="{!v.OrderItemListWrapper}" var="pr">
+                                            <tr> 
+                                                <td scope="row">
+                                                    <div class="slds-truncate" aura:id="PName"  title="{!pr.productName}">{!pr.productName}</div>
+                                                </td>
+                                                <td scope="row">
+                                                    <ui:inputNumber aura:id="Quantity"  value="{!pr.Quantity}" required="true"/>
+                                                </td>
+                                                <td scope="row">
+                                                    <ui:inputCurrency aura:id="UnitPrice" class="slds-input" value="{!pr.UnitPrice}"/>
+                                                </td>
+                                                <td scope="row">
+                                                    <div class="slds-truncate" aura:id="ListPrice" title="{!pr.ListPrice}">{!pr.ListPrice}</div>
+                                                </td>
+                                            </tr>
+                                        </aura:iteration>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div> 
+                            </div>
+                        </div>
+                    </div>
+                </aura:set> 
+            </aura:if> 
+        </form>
+    </div>
+    
+    <!--Modal Footer-->
+    <div class="modal-footer slds-modal__footer slds-size_1-of-1"> 
+        <aura:if isTrue="{!!v.showEditmode}">
+            <lightning:button onclick="{!c.cancelButton}" label="Cancel" variant="neutral"/>
+            <lightning:button onclick="{!c.NextButton}" label="Next" variant="brand" />
+            <aura:set attribute="else">
+                <lightning:button onclick="{!c.cancelButton}" label="Cancel" variant="brand"/>
+                <lightning:button label="Save" variant="brand" onclick="{!c.handleSaveSelectedProducts }"  />
+            </aura:set>
+        </aura:if> 
+    </div>
+    <!--End of Modal Footer-->
+</aura:component>

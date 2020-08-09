@@ -1,0 +1,155 @@
+({
+    init: function (cmp, event, helper) {
+        cmp.set('v.columns', [
+            { label: 'Product Name', fieldName: 'ProductName', type: 'text' },
+            { label: 'Product Code', fieldName: 'Product_Code__c', type: 'text' },
+            { label: 'List Price', fieldName: 'UnitPrice__c', type: 'currency' },
+            { label: 'Product Family', fieldName: 'ProductFamily', type: 'text' },
+            { label: 'Applications', fieldName: 'Applications', type: 'text' },
+            { label: 'Packaging', fieldName: 'Packaging', type: 'text' }
+        ]);
+        
+        var action = cmp.get("c.getListOfProducts");
+        action.setCallback(this, function(response){
+            var state = response.getState();
+            if (state === "SUCCESS") {
+                var rows = response.getReturnValue();
+                for (var i = 0; i < rows.length; i++) {
+                    var row = rows[i];
+                    if (row.Product2Id__r.Name) row.ProductName = row.Product2Id__r.Name;
+                    if (row.Product2Id__r.Packaging__c) row.Packaging = row.Product2Id__r.Packaging__c;
+                    if (row.Product2Id__r.Family__c) row.ProductFamily = row.Product2Id__r.Family__c;
+                    if (row.Product2Id__r.Applications__c) row.Applications = row.Product2Id__r.Applications__c;
+                } 
+                cmp.set("v.data", rows);
+                cmp.set("v.filteredData", rows);
+            }
+        });
+        
+        $A.enqueueAction(action);
+    },
+    
+    searchTable : function(cmp,event,helper) {
+        var allRecords = cmp.get("v.data");
+        var searchFilter = event.getSource().get("v.value").toUpperCase();
+        var tempArray = [];
+        var i;
+        
+        for(i=0; i < allRecords.length; i++){
+            if((allRecords[i].Product2Id__r.Name && allRecords[i].Product2Id__r.Name.toUpperCase().indexOf(searchFilter) != -1))
+            {
+                tempArray.push(allRecords[i]);
+            }
+        }
+        cmp.set("v.filteredData",tempArray);
+    },
+    handleSelect : function(component, event, helper) {
+        var selectedRows = event.getParam('selectedRows'); 
+        var setRows = [];
+        for ( var i = 0; i < selectedRows.length; i++ ) {
+            setRows.push(selectedRows[i]);
+        }
+        component.set("v.selectedproducts", setRows);
+        
+    },
+    
+    NextButton : function(component, event, helper) {
+        var action = component.get("c.getorderItemProducts");
+        var selectedprod = component.get("v.selectedproducts");
+        
+        action.setParams({
+            selproductList : selectedprod
+        });        
+        action.setCallback(this, function(response){
+            var state = response.getState();
+            var toastEvent = $A.get("e.force:showToast");
+            if(state === "SUCCESS"){ 
+                if(selectedprod.length == 0){
+                    toastEvent.setParams({
+                        title: 'Error',
+                        message: "Please Select Atleast One Product",
+                        duration:' 5000',
+                        key: 'info_alt',
+                        type: 'error',
+                        mode: 'pester'
+                    }); 
+                }else{
+                    component.set("v.showEditmode", "true");
+                    component.set("v.OrderItemListWrapper",response.getReturnValue());
+                }
+            }
+            toastEvent.fire();
+        }); 
+        
+        $A.enqueueAction(action); 
+        
+    },
+    handleSaveSelectedProducts : function(component, event, helper) {
+        var action = component.get("c.InsertListOfOrderItem");
+        var olilist = component.get("v.OrderItemListWrapper");
+        
+        action.setParams({
+            orderItemList :  olilist,
+            recordId : component.get("v.recordId")
+        });
+        
+        action.setCallback(this, function(response){
+            var state = response.getState();
+            if(state === "SUCCESS"){
+                var res = response.getReturnValue();
+                var toastEvent = $A.get("e.force:showToast");
+                
+                if(res.includes('Quantity Should Not Be Null/0')){
+                    toastEvent.setParams({
+                        title: 'Error',
+                        message: 'Testing',
+                        duration:' 1000',
+                        key: 'info_alt',
+                        type: 'error',
+                        mode: 'pester'
+                    });
+                }else if(res.includes('UnitPrice Should Not Be Null')){
+                    toastEvent.setParams({
+                        type : 'error',
+                        title : 'Error',
+                        message : res,
+                        mode : 'pester',
+                        key: 'info_alt',
+                        duration:' 1000',
+                    });
+                }else{
+                    if(res.includes('Saved Successfully')){
+                        toastEvent.setParams({
+                            type : 'success',
+                            title : 'Success',
+                            message : res,
+                            mode : 'pester',
+                            key: 'info_alt',
+                            duration:' 1000',
+                        });
+                        $A.get("e.force:closeQuickAction").fire()
+                    }else{
+                        
+                        toastEvent.setParams({
+                            type : 'error',
+                            title : 'Error',
+                            message : res,
+                            mode : 'pester',
+                            key: 'info_alt',
+                            duration:' 1000',
+                        });
+                    }
+                    //
+                }
+                toastEvent.fire();
+            }
+        });
+        $A.enqueueAction(action);
+    },
+    
+    cancelButton : function(component, event, helper) {
+        $A.get("e.force:closeQuickAction").fire()
+    },
+    
+    
+})

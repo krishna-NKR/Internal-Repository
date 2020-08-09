@@ -1,0 +1,90 @@
+public class ToaddProductsApex {
+    
+    @AuraEnabled
+    public static list<PricebookEntry__c> getListOfProducts(){
+        List<PricebookEntry__c> productList =[Select Id,Product2Id__c,Product2Id__r.Name, Product_Code__c, IsActive__c, 
+                                              UnitPrice__c, Product2Id__r.Family__c,
+                                              Product2Id__r.Applications__c,
+                                              Product2Id__r.Packaging__c 
+                                              from PricebookEntry__c where IsActive__c = True];
+        return productList;    
+    }
+    
+    
+    @AuraEnabled
+    public static list<OrderItemListWrapper> getorderItemProducts(List<PricebookEntry__c> selproductList){
+        List<OrderItemListWrapper> orderitemList =new List<OrderItemListWrapper>();
+        for(PricebookEntry__c pr:selproductList){
+            OrderItemListWrapper oli = new OrderItemListWrapper();
+            oli.productId = pr.Product2Id__c; 
+            oli.productName =  pr.Product2Id__r.Name;
+            oli.ListPrice = pr.UnitPrice__c;
+            oli.UnitPrice = pr.UnitPrice__c;
+            oli.Quantity=0;
+            orderitemList.add(oli);
+        } 
+        return orderitemList;    
+    }    
+    
+    
+    @AuraEnabled
+    public static string InsertListOfOrderItem(String recordId, List<OrderItemListWrapper> orderItemList){
+        Map<String,String> retvalMap =new Map<String,String>();
+        String message='';
+        String Error='';
+        getorderItemProducts(getListOfProducts());
+        try{
+            List<OrderItem__c> olist=new List<OrderItem__c>();
+            for(OrderItemListWrapper oliwrap:orderItemList){
+                OrderItem__c oli = new OrderItem__c();
+                oli.Product2Id__c = oliwrap.productId;
+                oli.Name = oliwrap.productName;
+                if(oliwrap.Quantity!= null && oliwrap.Quantity!= 0){
+                    oli.Quantity__c= oliwrap.Quantity;
+                }else {
+                    Error = 'Quantity Should not be null/0';
+                }
+                if(oliwrap.UnitPrice!= null){
+                    oli.Unit_Price__c=oliwrap.UnitPrice;
+                }else{
+                    Error = 'UnitPrice Should not be null'; 
+                }
+                
+                oli.ListPrice__c = oliwrap.ListPrice;
+                oli.OrderId__c = recordId;
+                olist.add(oli);
+            }   
+            if(olist.size()>0){
+                if(Error.contains('Quantity Should not be null/0')){
+                    message='Quantity Should not be null/0';
+                }else if(Error.contains('UnitPrice Should not be null')){
+                    message='UnitPrice Should not be null';
+                }else{
+                    insert olist;  
+                    message='Saved Successfully';
+                }
+                return message;
+            }
+        }catch(Exception ex){ 
+            message=ex.getMessage();
+            return message;
+        }
+        return null;
+    }
+    
+    
+    // wrapper class with @AuraEnabled and {get;set;} properties 
+    public class OrderItemListWrapper{
+        @AuraEnabled
+        public String productName{get;set;}
+        @AuraEnabled
+        public String productId{get;set;}
+        @AuraEnabled
+        public Integer Quantity{get;set;}
+        @AuraEnabled
+        public Decimal UnitPrice{get;set;}
+        @AuraEnabled
+        public Decimal ListPrice{get;set;}
+    }    
+    
+}
