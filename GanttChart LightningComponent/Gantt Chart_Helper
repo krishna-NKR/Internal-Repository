@@ -1,0 +1,134 @@
+({
+    setDays: function(component, event, helper){
+        component.set("v.ProjectList", []);
+         var month = component.find("month").get("v.value");
+            var year = component.find("year").get("v.value");
+            var week = component.find("week").get("v.value");
+            var numOfDay = [];
+            var curr = new Date;
+            var todayMonth = curr.getMonth();
+            var todayYear = curr.getFullYear();
+
+            var weekday = new Array(7);
+            weekday[0] = "SUN";
+            weekday[1] = "MON";
+            weekday[2] = "TUE";
+            weekday[3] = "WED";
+            weekday[4] = "THR";
+            weekday[5] = "FRI";
+            weekday[6] = "SAT";
+
+            var d = new Date(year, month - 1, 1);
+            var n = weekday[d.getDay()];
+            var m = d.getDay();
+
+            var getDaysInMonth = function(month, year) {
+                return new Date(year, month, 0).getDate();
+            };
+            var days = getDaysInMonth(month, year);
+
+            const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+                "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+            ];
+
+            var todayMonthName = monthNames[curr.getMonth()];
+            component.set('v.getmonthName', todayMonthName);
+
+            if (week == 8) {
+                for (var i = 1; i <= week; i++) {
+                    var res = weekday[((m - 1) + i) % 7] + ' ';
+                    numOfDay.push({
+                        res,
+                        i
+                    });
+                }
+            } else if (week == 16) {
+                for (var i = 9; i <= week; i++) {
+                    var res = weekday[((m - 1) + i) % 7] + ' ';
+                    numOfDay.push({
+                        res,
+                        i
+                    });
+                }
+            } else if (week == 24) {
+                for (var i = 17; i <= week; i++) {
+                    var res = weekday[((m - 1) + i) % 7] + ' ';
+                    numOfDay.push({
+                        res,
+                        i
+                    });
+                }
+            } else if (week == 31) {
+                component.set("v.week", week);
+                for (var i = 25; i <= days; i++) {
+                    var res = weekday[((m - 1) + i) % 7] + ' ';
+                    numOfDay.push({
+                        res,
+                        i
+                    });
+                }
+            } else {
+                component.set("v.week", week);
+                for (var i = 1; i <= days; i++) {
+                    var res = weekday[((m - 1) + i) % 7] + ' ';
+                    numOfDay.push({
+                        res,
+                        i
+                    });
+                }
+            }
+           component.set('v.numOfDays', numOfDay);
+           component.set('v.getmonth', month);
+           var getthemonth = component.get('v.getmonth');
+           helper.projects(component, getthemonth, year);
+    },
+    projects: function(component, month, year) {
+        var action = component.get("c.taskobjFamily");
+        action.setParams({
+            month: month,
+            year: year
+        });
+        action.setCallback(this, function(a) {
+            var state = a.getState();
+            if (state == 'SUCCESS') {
+                var temp1 = a.getReturnValue();
+                
+                var TMapLst = [];
+                for (var key in temp1) {
+                    var TaskMapLst = [];
+                    for (var key2 in temp1[key]) {
+                        if (key2 !== 'Family') {
+                            var pr = temp1[key][key2][0];
+                            var temp = temp1[key][key2];
+                            temp.splice(0, 1);
+                            TaskMapLst.push({
+                                value: (pr),
+                                key: temp
+                            });
+                        }
+                    }
+                    TMapLst.push({
+                        value: (temp1[key].Family),
+                        key: TaskMapLst
+                    });
+                }
+                
+                component.set("v.ProjectList", TMapLst);
+                
+            }else if (state === "INCOMPLETE") {
+                alert('Response is Incompleted');
+            }else if (state === "ERROR") {
+                var errors = response.getError();
+                if (errors) {
+                    if (errors[0] && errors[0].message) {
+                        alert("Error message: " + 
+                              errors[0].message);
+                    }
+                } else {
+                    alert("Unknown error");
+                }
+            }
+        });
+        $A.enqueueAction(action);
+    },                                          
+})

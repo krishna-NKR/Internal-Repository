@@ -1,0 +1,195 @@
+({
+    selectedWeek: function(component, event, helper) {
+
+        component.set('v.isSpinnerOpen', true);
+        setTimeout(() => {
+            component.set("v.ProjectList", []);
+            helper.setDays(component, event, helper);
+            component.set('v.isSpinnerOpen', false);
+        }, 500);
+    },
+    selectedYear: function(component, event, helper) {
+
+        component.set('v.isSpinnerOpen', true);
+        setTimeout(() => {
+            component.set("v.ProjectList", []);
+            helper.setDays(component, event, helper);
+            component.set('v.isSpinnerOpen', false);
+        }, 500);
+    },
+    selectedMonth: function(component, event, helper) {
+
+        component.set('v.isSpinnerOpen', true);
+        setTimeout(() => {
+            component.set("v.ProjectList", []);
+            helper.setDays(component, event, helper);
+            component.set('v.isSpinnerOpen', false);
+        }, 500);
+    },
+    doInit: function(component, event, helper) {
+        component.set("v.ProjectList", []);
+        component.set("v.Refreshboolean", true);
+        var numOfDay = [];
+        var numOfYear = [];
+        var curr = new Date;
+        var todayMonth = curr.getMonth();
+        var todayYear = curr.getFullYear();
+        for (let index = todayYear - 10; index < (todayYear + 31); index++) {
+            numOfYear.push(index);
+        }
+        component.set('v.numOfYears', numOfYear);
+        const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+            "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+        ];
+
+        var todayMonthName = monthNames[curr.getMonth()];
+        component.set('v.getmonthName', todayMonthName);
+
+        var weekday = new Array(7);
+        weekday[0] = "SUN";
+        weekday[1] = "MON";
+        weekday[2] = "TUE";
+        weekday[3] = "WED";
+        weekday[4] = "THR";
+        weekday[5] = "FRI";
+        weekday[6] = "SAT";
+
+        var d = new Date(new Date().getFullYear(), todayMonth, 1);
+        var n = weekday[d.getDay()];
+        var m = d.getDay();
+        var getDaysInMonth = function(todayMonth, todayYear) {
+            return new Date(todayYear, todayMonth + 1, 0).getDate();
+        };
+        var days = getDaysInMonth(todayMonth, todayYear);
+        for (var i = 1; i <= days; i++) {
+            var res = weekday[((m - 1) + i) % 7] + ' ';
+            numOfDay.push({
+                res,
+                i
+            });
+        }
+
+        var month = component.get('v.statusMonth');
+        component.set("v.numOfDays", numOfDay);
+
+        component.set("v.getmonth", todayMonth + 1);
+        component.set("v.statusMonth", todayMonth + 1);
+        component.set("v.statusYear", todayYear);
+        component.find("week").set("v.value", "32");
+
+        var month = component.find("month").get("v.value");
+        var year = component.find("year").get("v.value");
+        helper.projects(component, month, year);
+        component.set("v.boolean", true);
+        component.set("v.MonthHelpText", 'Select/Change The Month');
+        component.set("v.WeekHelpText", 'Select/Change The Week');
+        component.set("v.YearHelpText", 'Select/Change The Year');      
+    },
+
+    handleToday: function(component, event, helper) {
+        component.set('v.isSpinnerOpen', true);
+        setTimeout(() => {
+            component.set("v.ProjectList", []);
+            var numOfYear = [];
+            var curr = new Date;
+            var todayMonth = curr.getMonth();
+            component.set("v.statusMonth", todayMonth + 1);
+            var todayYear = curr.getFullYear();
+            component.set("v.statusYear", todayYear);
+            var todayDate = curr.getDate();
+            for (let index = todayYear - 10; index < (todayYear + 31); index++) {
+                numOfYear.push(index);
+            }
+            component.set("v.numOfYears", numOfYear);
+
+            if (todayDate >= 1 && todayDate <= 8) {
+                component.find("week").set("v.value", "8");
+            } else if (todayDate >= 9 && todayDate <= 16) {
+                component.find("week").set("v.value", "16");
+            } else if (todayDate >= 17 && todayDate <= 24) {
+                component.find("week").set("v.value", "24");
+            } else {
+                component.find("week").set("v.value", "31");
+            }
+            helper.setDays(component, event, helper);
+            component.set('v.isSpinnerOpen', false);
+
+        }, 5000);
+    },
+    handleRefresh: function(component, event, helper) {
+
+        component.set("v.toogleboolean", false);
+        var toogleboolean = component.get("v.toogleboolean");
+
+
+        component.set('v.isSpinnerOpen', true);
+
+        setTimeout(() => {
+            component.set("v.ProjectList", []);
+            var month = component.find("month").get("v.value");
+            var year = component.find("year").get("v.value");
+            helper.projects(component, month, year);
+            component.set('v.isSpinnerOpen', false);
+        }, 6000);
+
+    },
+    toggleFamily: function(component, event, helper) {
+        component.set('v.isSpinnerOpen', true);
+        setTimeout(() => {
+            var items = component.get("v.ProjectList"),
+                index = event.getSource().get("v.value");
+            var check = null;
+            var res = index.split(":");
+            var FaIndex = res[0];
+            items[FaIndex].expanded = !items[FaIndex].expanded;
+
+            for (var i = 0; i < items.length; i++) {
+                if (items[i].expanded == true) {
+                    check = true;
+                }
+                if (i != FaIndex) {
+                    items[i].expanded = false;
+                    for (var j = 0; j < items[i].key.length; j++) {
+                        items[i].key[j].expanded = false;
+                    }
+
+                }
+            }
+            if(check==true){
+              component.set("v.MonthHelpText", 'Please Collapse All Projects List');
+              component.set("v.WeekHelpText", 'Please Collapse All Projects List');
+              component.set("v.YearHelpText", 'Please Collapse All Projects List');
+            }else{
+              component.set("v.MonthHelpText", 'Select/Change The Month');
+              component.set("v.WeekHelpText", 'Select/Change The Week');
+              component.set("v.YearHelpText", 'Select/Change The Year');    
+            }
+            component.set("v.toogleboolean", check);
+            component.set("v.stortparentIndex", FaIndex);
+            component.set("v.ProjectList", items);
+            component.set('v.isSpinnerOpen', false);
+        }, 500);
+    },
+
+    toggleTaskFamily: function(component, event, helper) {
+        component.set('v.isSpinnerOpen', true);
+        setTimeout(() => {
+            var items = component.get("v.ProjectList"),
+                index = event.getSource().get("v.value");
+
+            var FaIndex = component.get("v.stortparentIndex");
+            var res = index.split(":");
+            var FaIndexrs = res[0];
+            for (var j = 0; j < items[FaIndex].key.length; j++) {
+                if (j != FaIndexrs) {
+                    items[FaIndex].key[j].expanded = false;
+                }
+            }
+
+            items[FaIndex].key[FaIndexrs].expanded = !items[FaIndex].key[FaIndexrs].expanded;
+            component.set("v.ProjectList", items);
+            component.set('v.isSpinnerOpen', false);
+        }, 500);
+    },
+
+})
