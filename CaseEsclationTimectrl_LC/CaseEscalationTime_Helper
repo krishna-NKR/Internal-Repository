@@ -1,0 +1,16 @@
+({
+    UpdateCaseHelper : function(component, event, eventType) {
+        var action = component.get("c.UpdateCase");
+        action.setParams({
+            recordId : component.get("v.recordId"),
+            eventType : eventType 
+        });
+        
+        action.setCallback(this,function(response){
+            var state = response.getState();
+            if(state === 'SUCCESS'){ 
+            }
+        });
+        $A.enqueueAction(action);
+    }
+})
